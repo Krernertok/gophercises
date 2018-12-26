@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 
 var filepath *string
 var limit *int
+var randomize *bool
 
 func init() {
 	log.SetOutput(os.Stdout)
@@ -24,13 +26,17 @@ func init() {
 	defaultLimit := 30
 	limitUsage := "time limit for answering a question"
 	limit = flag.Int("limit", defaultLimit, limitUsage)
+
+	defaultRandomize := false
+	randomizeUsage := "randomize the order of the questions"
+	randomize = flag.Bool("random", defaultRandomize, randomizeUsage)
 }
 
 func main() {
 	var numCorrect int
 
 	flag.Parse()
-	questions := getQuestions(*filepath)
+	questions := getQuestions(*filepath, *randomize)
 	numQuestions := len(questions)
 
 	fmt.Println("Answer the following questions as quickly as possible.",
@@ -65,7 +71,7 @@ func main() {
 	fmt.Println("You got", numCorrect, "out of", numQuestions, "questions correct!")
 }
 
-func getQuestions(path string) [][]string {
+func getQuestions(path string, randomize bool) [][]string {
 	file, err := os.Open(path)
 
 	if err != nil {
@@ -89,6 +95,13 @@ func getQuestions(path string) [][]string {
 		}
 
 		questions = append(questions, question)
+	}
+
+	if randomize {
+		rand.Seed(time.Now().Unix())
+		rand.Shuffle(len(questions), func(i, j int) {
+			questions[i], questions[j] = questions[j], questions[i]
+		})
 	}
 
 	return questions
