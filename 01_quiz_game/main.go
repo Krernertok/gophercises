@@ -8,25 +8,33 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 var filepath *string
-var defaultPath = "data/quiz.csv"
+var limit *int
 
 func init() {
 	log.SetOutput(os.Stdout)
 
+	defaultPath := "data/quiz.csv"
 	pathUsage := "path to the CSV file containing the questions and answers"
 	filepath = flag.String("file", defaultPath, pathUsage)
+
+	defaultLimit := 30
+	limitUsage := "time limit for answering a question"
+	limit = flag.Int("limit", defaultLimit, limitUsage)
 }
 
 func main() {
-	var numQuestions, numCorrect int
+	var numCorrect int
 
 	flag.Parse()
 	questions := getQuestions(*filepath)
+	numQuestions := len(questions)
 
-	fmt.Println("Answer the following questions as quickly as possible.")
+	fmt.Println("Answer the following questions as quickly as possible.",
+		"You have", *limit, "seconds per answer.")
 	fmt.Println("Press ENTER to start.")
 
 	var start string
@@ -37,19 +45,21 @@ func main() {
 			continue
 		}
 
-		// print the question
-		fmt.Println(q[0])
+		answerChan := make(chan string)
+		timeout := make(chan bool)
 
-		var answer string
-		fmt.Scanln(&answer)
-		answer = strings.ToLower(strings.TrimSpace(answer))
+		go askQuestion(q[0], answerChan)
+		go timer(*limit, timeout)
 
-		// check against the correct answer
-		if answer == q[1] {
-			numCorrect++
+		select {
+		case answer := <-answerChan:
+			if answer == q[1] {
+				numCorrect++
+			}
+		case <-timeout:
+			fmt.Println("Time's up! You got", numCorrect, "out of", numQuestions, "questions correct.")
+			os.Exit(0)
 		}
-
-		numQuestions++
 	}
 
 	fmt.Println("You got", numCorrect, "out of", numQuestions, "questions correct!")
@@ -82,4 +92,19 @@ func getQuestions(path string) [][]string {
 	}
 
 	return questions
+}
+
+func askQuestion(question string, answer chan<- string) {
+	var input string
+	fmt.Println(question)
+
+	fmt.Scanln(&input)
+	input = strings.ToLower(strings.TrimSpace(input))
+
+	answer <- input
+}
+
+func timer(timeLimit int, timeout chan<- bool) {
+	time.Sleep(time.Duration(timeLimit) * time.Second)
+	timeout <- true
 }
