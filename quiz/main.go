@@ -17,6 +17,8 @@ var limit *int
 var randomize *bool
 
 func init() {
+	// Feedback from solution: Could use a custom function instead
+	// I.e. func exit(message string)
 	log.SetOutput(os.Stdout)
 
 	defaultPath := "data/quiz.csv"
@@ -53,11 +55,16 @@ func main() {
 			continue
 		}
 
+		// Feedback from solution: Could use a struct for the Q and A
 		question := q[0]
+		// Feedback from solution: Could use strings.TrimSpace() to
+		// handle correct answers with extra whitespace
 		correctAnswer := q[1]
 
 		fmt.Println(question)
 
+		// Feedback from solution: Completely misunderstood the timer part
+		// Implemented time limit per answer instead of the whole quiz
 		timeout := make(chan bool)
 		go setTimer(*limit, timeout)
 
@@ -88,13 +95,14 @@ func printEnd(correct, total int) {
 func getQuestions(path string, randomize bool) [][]string {
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal("Could not open file with path", path, "Error occurred:", err)
+		log.Fatal("Could not open file with path: ", path)
 	}
 	defer file.Close()
 
 	questions := make([][]string, 0)
 	csvReader := csv.NewReader(file)
 
+	// Feedback from solution: Could just read all the lines in one go (ReadAll())
 	for {
 		question, err := csvReader.Read()
 
@@ -136,6 +144,7 @@ func getAnswers(answers chan<- string) {
 }
 
 func setTimer(timeLimit int, timeout chan<- bool) {
+	// Feedback from solution: Could have used time.Timer instead
 	time.Sleep(time.Duration(timeLimit) * time.Second)
 	timeout <- true
 	close(timeout)
