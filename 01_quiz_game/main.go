@@ -46,15 +46,16 @@ func main() {
 	var start string
 	fmt.Scanln(&start)
 
+	answerChan := make(chan string)
+	go getAnswer(answerChan)
+
 	for _, q := range questions {
 		if len(q) != 2 {
 			continue
 		}
+		fmt.Println(q[0])
 
-		answerChan := make(chan string)
 		timeout := make(chan bool)
-
-		go askQuestion(q[0], answerChan)
 		go timer(*limit, timeout)
 
 		select {
@@ -63,8 +64,6 @@ func main() {
 				numCorrect++
 			}
 		case <-timeout:
-			fmt.Println("Time's up! You got", numCorrect, "out of", numQuestions, "questions correct.")
-			os.Exit(0)
 		}
 	}
 
@@ -107,17 +106,18 @@ func getQuestions(path string, randomize bool) [][]string {
 	return questions
 }
 
-func askQuestion(question string, answer chan<- string) {
+func getAnswer(answer chan<- string) {
 	var input string
-	fmt.Println(question)
 
-	fmt.Scanln(&input)
-	input = strings.ToLower(strings.TrimSpace(input))
-
-	answer <- input
+	for {
+		fmt.Scanln(&input)
+		input = strings.ToLower(strings.TrimSpace(input))
+		answer <- input
+	}
 }
 
 func timer(timeLimit int, timeout chan<- bool) {
 	time.Sleep(time.Duration(timeLimit) * time.Second)
 	timeout <- true
+	close(timeout)
 }
