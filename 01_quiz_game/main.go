@@ -29,54 +29,67 @@ func init() {
 
 	defaultRandomize := false
 	randomizeUsage := "randomize the order of the questions"
-	randomize = flag.Bool("random", defaultRandomize, randomizeUsage)
+	randomize = flag.Bool("shuffle", defaultRandomize, randomizeUsage)
+
+	flag.Parse()
 }
 
 func main() {
 	var numCorrect int
-
-	flag.Parse()
 	questions := getQuestions(*filepath, *randomize)
-	numQuestions := len(questions)
 
-	fmt.Println("Answer the following questions as quickly as possible.",
-		"You have", *limit, "seconds per answer.")
-	fmt.Println("Press ENTER to start.")
+	printStart(*limit)
 
+	// read the first press of ENTER
 	var start string
 	fmt.Scanln(&start)
 
 	answerChan := make(chan string)
-	go getAnswer(answerChan)
+	go getAnswers(answerChan)
 
 	for _, q := range questions {
+		// just skip invalid question rows
 		if len(q) != 2 {
 			continue
 		}
-		fmt.Println(q[0])
+
+		question := q[0]
+		correctAnswer := q[1]
+
+		fmt.Println(question)
 
 		timeout := make(chan bool)
-		go timer(*limit, timeout)
+		go setTimer(*limit, timeout)
 
 		select {
 		case answer := <-answerChan:
-			if answer == q[1] {
+			if answer == correctAnswer {
 				numCorrect++
 			}
 		case <-timeout:
 		}
 	}
 
-	fmt.Println("You got", numCorrect, "out of", numQuestions, "questions correct!")
+	printEnd(numCorrect, len(questions))
 }
 
+// UI part
+func printStart(timelimit int) {
+	fmt.Println("Answer the following questions as quickly as possible.",
+		"You have", timelimit, "seconds per answer.")
+	fmt.Println("Press ENTER to start.")
+}
+
+func printEnd(correct, total int) {
+	fmt.Println("You got", correct, "out of", total, "questions correct!")
+}
+
+// read questions from file
 func getQuestions(path string, randomize bool) [][]string {
 	file, err := os.Open(path)
-
 	if err != nil {
 		log.Fatal("Could not open file with path", path, "Error occurred:", err)
 	}
-
 	defer file.Close()
 
 	questions := make([][]string, 0)
@@ -97,26 +110,32 @@ func getQuestions(path string, randomize bool) [][]string {
 	}
 
 	if randomize {
-		rand.Seed(time.Now().Unix())
-		rand.Shuffle(len(questions), func(i, j int) {
-			questions[i], questions[j] = questions[j], questions[i]
-		})
+		randomizeQuestions(&questions)
 	}
 
 	return questions
 }
 
-func getAnswer(answer chan<- string) {
+func randomizeQuestions(questions *[][]string) {
+	rand.Seed(time.Now().Unix())
+	q := *questions
+	rand.Shuffle(len(q), func(i, j int) {
+		q[i], q[j] = q[j], q[i]
+	})
+}
+
+// using channels
+func getAnswers(answers chan<- string) {
 	var input string
 
 	for {
 		fmt.Scanln(&input)
 		input = strings.ToLower(strings.TrimSpace(input))
-		answer <- input
+		answers <- input
 	}
 }
 
-func timer(timeLimit int, timeout chan<- bool) {
+func setTimer(timeLimit int, timeout chan<- bool) {
 	time.Sleep(time.Duration(timeLimit) * time.Second)
 	timeout <- true
 	close(timeout)
