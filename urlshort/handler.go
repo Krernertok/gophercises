@@ -1,8 +1,10 @@
 package urlshort
 
 import (
+	"encoding/json"
 	"gopkg.in/yaml.v2"
 	"net/http"
+	"os"
 )
 
 // MapHandler will return an http.HandlerFunc (which also
@@ -39,21 +41,21 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 //
 // See MapHandler to create a similar http.HandlerFunc via
 // a mapping of paths to urls.
-func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
+func YAMLHandler(yml *os.File, fallback http.Handler) (http.HandlerFunc, error) {
 	paths, err := getYAML(yml)
 
 	if err != nil {
 		return nil, err
 	}
 
-	pathsToUrls := buildPathMap(paths)
+	pathsToUrls := pathMapFromYAML(paths)
 
 	return MapHandler(pathsToUrls, fallback), nil
 }
 
-func getYAML(yml []byte) ([]yamlPath, error) {
+func getYAML(yml *os.File) ([]yamlPath, error) {
 	var paths []yamlPath
-	err := yaml.Unmarshal(yml, &paths)
+	err := yaml.NewDecoder(yml).Decode(&paths)
 
 	if err != nil {
 		return nil, err
@@ -62,7 +64,7 @@ func getYAML(yml []byte) ([]yamlPath, error) {
 	return paths, nil
 }
 
-func buildPathMap(paths []yamlPath) map[string]string {
+func pathMapFromYAML(paths []yamlPath) map[string]string {
 	pathsToUrls := make(map[string]string)
 	for _, p := range paths {
 		pathsToUrls[p.Path] = p.URL
@@ -83,16 +85,45 @@ type yamlPath struct {
 //
 // JSON is expected to be in the format:
 //
-//  [{
-//		"path": "/some-path",
-//       "url": "https://www.some-url.com/demo"
-//	}]
+//  [
+//		{
+//			"path": "/some-path",
+//       	"url": "https://www.some-url.com/demo"
+//		}
+//	]
 //
 // The only errors that can be returned all related to having
 // invalid JSON data.
 //
 // See MapHandler to create a similar http.HandlerFunc via
 // a mapping of paths to urls.
-func JSONHandler(json string, fallback http.Handler) (http.HandlerFunc, error) {
-	return nil, nil
+func JSONHandler(jsonString string, fallback http.Handler) (http.HandlerFunc, error) {
+	paths, err := parseJSON([]byte(jsonString))
+
+	if err != nil {
+		return nil, err
+	}
+	pathsToUrls := pathMapFromJSON(paths)
+	return MapHandler(pathsToUrls, fallback), nil
+}
+
+func parseJSON(jsonData []byte) ([]jsonPath, error) {
+	var jsonPaths []jsonPath
+	if err := json.Unmarshal(jsonData, &jsonPaths); err != nil {
+		return nil, err
+	}
+	return jsonPaths, nil
+}
+
+type jsonPath struct {
+	Path string `json:"path"`
+	URL  string `json:"url"`
+}
+
+func pathMapFromJSON(paths []jsonPath) map[string]string {
+	pathsToUrls := make(map[string]string)
+	for _, p := range paths {
+		pathsToUrls[p.Path] = p.URL
+	}
+	return pathsToUrls
 }
