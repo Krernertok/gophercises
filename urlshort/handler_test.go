@@ -6,11 +6,11 @@ import (
 )
 
 func TestGetYAML(t *testing.T) {
-	filepath := "paths.yaml"
+	filepath := "data/paths.yaml"
 	yamlFile, fileErr := os.Open(filepath)
 
 	if fileErr != nil {
-		t.Fatal("Could not open file:")
+		t.Fatal("Could not open file:", filepath)
 	}
 
 	paths, parseErr := getYAML(yamlFile)
@@ -29,10 +29,10 @@ func TestGetYAML(t *testing.T) {
 		}
 	}
 
-	invalidPath := "invalid.yaml"
-	invalidYaml, invalidFileErr := os.Open(invalidPath)
+	invalidYAMLPath := "data/invalid.yaml"
+	invalidYaml, invalidFileErr := os.Open(invalidYAMLPath)
 	if invalidFileErr != nil {
-		t.Fatal("Could not open file with invalid YAML: ", invalidPath)
+		t.Fatal("Could not open file with invalid YAML: ", invalidYAMLPath)
 	}
 
 	paths, parseErr = getYAML(invalidYaml)
@@ -60,18 +60,10 @@ func TestPathMapFromYAML(t *testing.T) {
 	}
 }
 
-func TestParseJSON(t *testing.T) {
-	validJSON := `
-[
-	{
-		"path": "/json",
-		"url": "https://godoc.org/encoding/json"
-	},
-	{
-		"path": "/flag",
-		"url": "https://godoc.org/flag"
-	}
-]`
+func TestGetJSON(t *testing.T) {
+	validFilePath := "data/paths.json"
+	invalidFilePath := "data/invalid.json"
+
 	expectedPaths := []jsonPath{
 		{
 			Path: "/json",
@@ -83,7 +75,13 @@ func TestParseJSON(t *testing.T) {
 		},
 	}
 
-	paths, err := parseJSON([]byte(validJSON))
+	validFile, err := os.Open(validFilePath)
+
+	if err != nil {
+		t.Fatal("Couldn't open valid JSON file.")
+	}
+
+	paths, err := getJSON(validFile)
 
 	if err != nil {
 		t.Error("Couldn't parse valid JSON: ", err)
@@ -112,6 +110,17 @@ func TestParseJSON(t *testing.T) {
 		}
 	}
 
+	invalidFile, err := os.Open(invalidFilePath)
+
+	if err != nil {
+		t.Fatal("Couldn't open invalid JSON file.")
+	}
+
+	paths, err = getJSON(invalidFile)
+
+	if err == nil {
+		t.Error("Shouldn't be able to parse invalid JSON: ", invalidFilePath)
+	}
 }
 
 func TestPathMapFromJSON(t *testing.T) {

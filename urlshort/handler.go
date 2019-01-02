@@ -1,7 +1,9 @@
 package urlshort
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"net/http"
 	"os"
@@ -97,22 +99,27 @@ type yamlPath struct {
 //
 // See MapHandler to create a similar http.HandlerFunc via
 // a mapping of paths to urls.
-func JSONHandler(jsonString string, fallback http.Handler) (http.HandlerFunc, error) {
-	paths, err := parseJSON([]byte(jsonString))
+func JSONHandler(jsonFile *os.File, fallback http.Handler) (http.HandlerFunc, error) {
+	paths, err := getJSON(jsonFile)
 
 	if err != nil {
 		return nil, err
 	}
+
 	pathsToUrls := pathMapFromJSON(paths)
+
 	return MapHandler(pathsToUrls, fallback), nil
 }
 
-func parseJSON(jsonData []byte) ([]jsonPath, error) {
-	var jsonPaths []jsonPath
-	if err := json.Unmarshal(jsonData, &jsonPaths); err != nil {
+func getJSON(jsonFile *os.File) ([]jsonPath, error) {
+	var paths []jsonPath
+	err := json.NewDecoder(jsonFile).Decode(&paths)
+
+	if err != nil {
 		return nil, err
 	}
-	return jsonPaths, nil
+
+	return paths, nil
 }
 
 type jsonPath struct {
@@ -126,4 +133,28 @@ func pathMapFromJSON(paths []jsonPath) map[string]string {
 		pathsToUrls[p.Path] = p.URL
 	}
 	return pathsToUrls
+}
+
+// DBHandler will return an http.HandlerFunc (which also
+// implements http.Handler) that will attempt to map any
+// paths to their corresponding URL. DBHandler will use the
+// database provided as an argument to map paths to URLs.
+// If the path is not provided in the database, then the fallback
+// http.Handler will be called instead.
+func DBHandler(db *sql.DB, fallback http.Handler) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var url string
+
+		query := "SELECT url FROM urlshort WHERE path=$1;"
+		path := r.URL.Path
+		result := db.QueryRow(query, path)
+
+		switch err := result.Scan(&url); err {
+		case nil:
+			http.Redirect(w, r, url, http.StatusMovedPermanently)
+		default:
+			fmt.Println("Error accessing database:", err)
+			fallback.ServeHTTP(w, r)
+		}
+	})
 }
