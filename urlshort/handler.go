@@ -17,10 +17,16 @@ import (
 // http.Handler will be called instead.
 func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// Feedback from solution:
+		// path := r.URL.Path
+		// url, ok := pathsToUrls[path]; ok {/* Redirect here */}
 		redirectURL, exists := pathsToUrls[r.URL.Path]
 
 		if exists {
+			// Feedback from solution: Should use 302 Status Found (http.StatusFound)
 			http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
+			// Feedback from solution: Should return
 		}
 
 		fallback.ServeHTTP(w, r)
