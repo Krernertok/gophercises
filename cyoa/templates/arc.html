@@ -1,0 +1,17 @@
+<html>
+    <body>
+        <h1>{{.Title}}</h1>
+        <div class="text">
+            {{range .Story}}
+                <p>{{.}}</p>
+            {{end}}
+        </div>
+        <div class="options">
+            {{range .Options}}
+                <a href="/{{.ArcName}}">{{.Text}}</a>
+            {{else}}
+            <a href="/">Start again!</a>
+            {{end}}
+        </div>
+    </body>
+</html>
