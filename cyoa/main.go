@@ -5,6 +5,7 @@ import (
 	"github.com/krernertok/gophercises/cyoa/story"
 	"html/template"
 	"net/http"
+	"strings"
 )
 
 func main() {
@@ -37,13 +38,14 @@ func (h storyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	firstArc := "intro"
 	path := r.URL.Path
 
-	if path == "/" {
+	switch {
+	case path == "/":
 		arc, found = h.story[firstArc]
-	} else {
-		if path[0] == '/' {
-			path = path[1:]
-		}
-		arc, found = h.story[path]
+	case strings.HasPrefix(path, "/css/"):
+		http.ServeFile(w, r, strings.TrimLeft(path, "/"))
+		return
+	default:
+		arc, found = h.story[path[1:]]
 	}
 
 	if !found {
@@ -56,11 +58,3 @@ func (h storyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 }
-
-/*
-1. Parsing JSON into maps and structs DONE
-2. HTTP server / Routing DONE
-	- Name of the arc should be the path
-3. Templates DONE
-4. Styling
-*/

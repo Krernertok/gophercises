@@ -1,0 +1,26 @@
+a {
+    display: block;
+    margin-bottom: 10px;
+    color: black;
+    font-weight: bold;
+}
+
+body {
+    font-family: "Libre Baskerville", serif;
+}
+
+.wrap{
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 0.5em;
+}
+ 
+.wrap:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+#title {
+    margin-top: 75px;
+}

@@ -1,12 +1,16 @@
 <html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="css/arc.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Libre+Baskerville">
+    </head>
     <body>
-        <h1>{{.Title}}</h1>
-        <div class="text">
+        <h1 class="wrap" id="title">{{.Title}}</h1>
+        <div class="text wrap">
             {{range .Story}}
                 <p>{{.}}</p>
             {{end}}
         </div>
-        <div class="options">
+        <div class="options wrap">
             {{range .Options}}
                 <a href="/{{.ArcName}}">{{.Text}}</a>
             {{else}}
