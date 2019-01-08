@@ -13,9 +13,9 @@ type Option struct {
 
 // Arc depicts a single story object
 type Arc struct {
-	Title   string   `json:"title"`
-	Story   []string `json:"story"`
-	Options []Option `json:"options"`
+	Title      string   `json:"title"`
+	Paragraphs []string `json:"story"`
+	Options    []Option `json:"options"`
 }
 
 // ParseStory parses the JSON file at the given path and returns
