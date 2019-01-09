@@ -5,6 +5,9 @@ import (
 	"os"
 )
 
+// Story is an alias for map[string]Arc
+type Story map[string]Arc
+
 // Option contains Text and Arc fields
 type Option struct {
 	Text    string `json:"text"`
