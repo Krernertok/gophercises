@@ -7,7 +7,8 @@ import (
 )
 
 func main() {
-	filepath := flag.String("file", "data/gopher.json", "path for the story JSON file")
+	defaultPath := "/mnt/c/dev/goworkspace/src/github.com/krernertok/gophercises/cyoa/data/gopher.json"
+	filepath := flag.String("file", defaultPath, "path for the story JSON file")
 	firstArc := flag.String("first-arc", "intro", "name of the first story arc")
 	flag.Parse()
 
