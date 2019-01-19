@@ -1,10 +1,10 @@
 package link
 
 import (
-	"fmt"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 	"io"
+	"strings"
 )
 
 // Link consists of an anchor tags href attribute and the text
@@ -23,29 +23,51 @@ func ParseLinks(r io.Reader) ([]Link, error) {
 		return nil, err
 	}
 
-	traverseTree(doc)
-
-	return []Link{}, nil
+	links := traverseTree(doc)
+	return links, nil
 }
 
-func traverseTree(n *html.Node) {
-	child := n.FirstChild
+func traverseTree(n *html.Node) []Link {
+	var links []Link
 
+	child := n.FirstChild
 	for child != nil {
-		traverseTree(child)
+		links = append(links, traverseTree(child)...)
 		child = child.NextSibling
 	}
 
 	if n.DataAtom == atom.A {
-		handleAnchorNode(n)
+		links = append(links, handleAnchorNode(n))
 	}
+
+	return links
 }
 
-// TODO: Extract href and text and return Link
-func handleAnchorNode(n *html.Node) {
+func handleAnchorNode(n *html.Node) Link {
+	var href string
+
 	for _, attr := range n.Attr {
 		if attr.Key == "href" {
-			fmt.Println(attr.Val)
+			href = attr.Val
 		}
 	}
+
+	textFragments := textFromAnchorNode(n)
+	text := strings.Join(textFragments, "")
+
+	return Link{href, text}
+}
+
+func textFromAnchorNode(n *html.Node) []string {
+	var textFragments []string
+
+	child := n.FirstChild
+	for child != nil {
+		if child.Type == html.TextNode {
+			textFragments = append(textFragments, child.Data)
+		}
+		child = child.NextSibling
+	}
+
+	return textFragments
 }

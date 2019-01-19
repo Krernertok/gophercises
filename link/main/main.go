@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	path := "data/ex3.html"
+	path := "data/ex4.html"
 	html, err := os.Open(path)
 
 	if err != nil {
@@ -15,5 +15,13 @@ func main() {
 		return
 	}
 
-	link.ParseLinks(html)
+	links, err := link.ParseLinks(html)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, l := range links {
+		fmt.Printf("Link: '%s', Text: '%s'\n", l.Href, l.Text)
+	}
 }
