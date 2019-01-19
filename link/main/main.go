@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	path := "data/ex4.html"
+	path := "data/ex2.html"
 	html, err := os.Open(path)
 
 	if err != nil {

@@ -52,20 +52,24 @@ func handleAnchorNode(n *html.Node) Link {
 		}
 	}
 
-	textFragments := textFromAnchorNode(n)
-	text := strings.Join(textFragments, "")
+	textFragments := textFromNode(n)
+	text := strings.Join(textFragments, " ")
 
 	return Link{href, text}
 }
 
-func textFromAnchorNode(n *html.Node) []string {
+func textFromNode(n *html.Node) []string {
 	var textFragments []string
 
 	child := n.FirstChild
 	for child != nil {
 		if child.Type == html.TextNode {
-			textFragments = append(textFragments, child.Data)
+			textFragment := strings.TrimSpace(child.Data)
+			textFragments = append(textFragments, textFragment)
+		} else {
+			textFragments = append(textFragments, textFromNode(child)...)
 		}
+
 		child = child.NextSibling
 	}
 
