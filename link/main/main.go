@@ -21,7 +21,5 @@ func main() {
 		return
 	}
 
-	for _, l := range links {
-		fmt.Printf("Link: '%s', Text: '%s'\n", l.Href, l.Text)
-	}
+	fmt.Printf("%+v\n", links)
 }

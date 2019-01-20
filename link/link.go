@@ -23,19 +23,19 @@ func ParseLinks(r io.Reader) ([]Link, error) {
 		return nil, err
 	}
 
-	links := traverseTree(doc)
+	links := getLinks(doc)
 	return links, nil
 }
 
-func traverseTree(n *html.Node) []Link {
+func getLinks(n *html.Node) []Link {
 	var links []Link
 
-	child := n.FirstChild
-	for child != nil {
-		links = append(links, traverseTree(child)...)
-		child = child.NextSibling
+	// Front end recursion
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		links = append(links, getLinks(child)...)
 	}
 
+	// Process current node
 	if n.DataAtom == atom.A {
 		links = append(links, handleAnchorNode(n))
 	}
@@ -49,29 +49,28 @@ func handleAnchorNode(n *html.Node) Link {
 	for _, attr := range n.Attr {
 		if attr.Key == "href" {
 			href = attr.Val
+			break
 		}
 	}
 
-	textFragments := textFromNode(n)
-	text := strings.Join(textFragments, " ")
+	text := textFromNode(n)
 
 	return Link{href, text}
 }
 
-func textFromNode(n *html.Node) []string {
-	var textFragments []string
-
-	child := n.FirstChild
-	for child != nil {
-		if child.Type == html.TextNode {
-			textFragment := strings.TrimSpace(child.Data)
-			textFragments = append(textFragments, textFragment)
-		} else {
-			textFragments = append(textFragments, textFromNode(child)...)
-		}
-
-		child = child.NextSibling
+func textFromNode(n *html.Node) string {
+	if n.Type == html.TextNode {
+		return n.Data
 	}
 
-	return textFragments
+	if n.Type != html.ElementNode {
+		return ""
+	}
+
+	var text string
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		text += textFromNode(child)
+	}
+
+	return strings.Join(strings.Fields(text), " ")
 }
