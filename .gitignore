@@ -1,4 +1,7 @@
-*.yaml
+# Directories
 data/
 config/
 
+# Files
+*.log
+*.yaml
