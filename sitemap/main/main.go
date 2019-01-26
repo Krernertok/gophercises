@@ -21,27 +21,21 @@ import (
 // 6. Repeat until queue is empty
 // 7. Create XML from visited URLs
 
+var exists = struct{}{}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Provide the URL for the domain you want the sitemap for.")
 		return
 	}
 
-	domain := os.Args[1]
-	if !strings.HasPrefix(domain, "http://") &&
-		!strings.HasPrefix(domain, "https://") {
-		domain = "http://" + domain
-	}
+	domain := addScheme(os.Args[1])
 	baseURL, err := url.Parse(domain)
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	visited := make(map[string]struct{})
-	exists := struct{}{}
-	unvisited := list.New()
 
 	links, err := sitemap.GetLinks(baseURL.String())
 
@@ -50,44 +44,45 @@ func main() {
 		return
 	}
 
+	unvisited := list.New()
+	addLinksToList(links, unvisited)
+
+	visited := make(map[string]struct{})
 	visited[baseURL.String()] = exists
 
-	for _, link := range links {
-		unvisited.PushBack(link)
-	}
-
-	firstElement := unvisited.Front()
-
-	for firstElement != nil {
-		href := firstElement.Value.(link.Link).Href
+	for elem := unvisited.Front(); elem != nil; elem = elem.Next() {
+		href := elem.Value.(link.Link).Href
 		url, err := baseURL.Parse(href)
 
 		if err != nil {
-			fmt.Println("Skipping href:", href, "Error:", err, "URL:", url)
-			unvisited.Remove(firstElement)
-			firstElement = unvisited.Front()
+			fmt.Println("Skipping href:", href, "Error:", err)
 			continue
 		}
 
 		urlString := url.String()
 
-		if _, found := visited[urlString]; found {
+		if _, found := visited[urlString]; found || url.Hostname() != baseURL.Hostname() {
 			fmt.Println("Skipping:", urlString)
-			unvisited.Remove(firstElement)
-			firstElement = unvisited.Front()
 			continue
 		}
 
-		links, _ = sitemap.GetLinks(urlString)
-		visited[urlString] = exists
-
 		fmt.Println("Visited URL:", urlString)
+		visited[urlString] = exists
+		links, _ = sitemap.GetLinks(urlString)
+		addLinksToList(links, unvisited)
+	}
+}
 
-		for _, link := range links {
-			unvisited.PushBack(link)
-		}
+func addScheme(domain string) string {
+	if !strings.HasPrefix(domain, "http://") &&
+		!strings.HasPrefix(domain, "https://") {
+		domain = "http://" + domain
+	}
+	return domain
+}
 
-		unvisited.Remove(firstElement)
-		firstElement = unvisited.Front()
+func addLinksToList(links []link.Link, l *list.List) {
+	for _, link := range links {
+		l.PushBack(link)
 	}
 }
