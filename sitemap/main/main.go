@@ -20,6 +20,9 @@ import (
 //    unvisited links into queue
 // 6. Repeat until queue is empty
 // 7. Create XML from visited URLs
+const (
+	path = "urls.xml"
+)
 
 var exists = struct{}{}
 
@@ -47,8 +50,8 @@ func main() {
 	unvisited := list.New()
 	addLinksToList(links, unvisited)
 
-	visited := make(map[string]struct{})
-	visited[baseURL.String()] = exists
+	urls := make(map[string]struct{})
+	urls[baseURL.String()] = exists
 
 	for elem := unvisited.Front(); elem != nil; elem = elem.Next() {
 		href := elem.Value.(link.Link).Href
@@ -61,15 +64,27 @@ func main() {
 
 		urlString := url.String()
 
-		if _, found := visited[urlString]; found || url.Hostname() != baseURL.Hostname() {
+		if _, found := urls[urlString]; found || url.Hostname() != baseURL.Hostname() {
 			fmt.Println("Skipping:", urlString)
 			continue
 		}
 
+		urls[urlString] = exists
+
 		fmt.Println("Visited URL:", urlString)
-		visited[urlString] = exists
+
 		links, _ = sitemap.GetLinks(urlString)
 		addLinksToList(links, unvisited)
+	}
+
+	xUrls := []string{}
+	for u := range urls {
+		xUrls = append(xUrls, u)
+	}
+
+	err = sitemap.WriteLinksXML(path, xUrls)
+	if err != nil {
+		fmt.Println("Error writing XML:", err)
 	}
 }
 
