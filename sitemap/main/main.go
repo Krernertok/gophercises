@@ -1,11 +1,9 @@
 package main
 
 import (
-	"container/list"
 	"fmt"
-	"github.com/krernertok/gophercises/link"
 	"github.com/krernertok/gophercises/sitemap"
-	"net/url"
+	"log"
 	"os"
 	"strings"
 )
@@ -24,8 +22,6 @@ const (
 	path = "urls.xml"
 )
 
-var exists = struct{}{}
-
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Provide the URL for the domain you want the sitemap for.")
@@ -33,58 +29,15 @@ func main() {
 	}
 
 	domain := addScheme(os.Args[1])
-	baseURL, err := url.Parse(domain)
+	urls, err := sitemap.GetURLs(domain)
 
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
 
-	links, err := sitemap.GetLinks(baseURL.String())
-
+	err = sitemap.WriteLinksXML(path, urls)
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	unvisited := list.New()
-	addLinksToList(links, unvisited)
-
-	urls := make(map[string]struct{})
-	urls[baseURL.String()] = exists
-
-	for elem := unvisited.Front(); elem != nil; elem = elem.Next() {
-		href := elem.Value.(link.Link).Href
-		url, err := baseURL.Parse(href)
-
-		if err != nil {
-			fmt.Println("Skipping href:", href, "Error:", err)
-			continue
-		}
-
-		urlString := url.String()
-
-		if _, found := urls[urlString]; found || url.Hostname() != baseURL.Hostname() {
-			fmt.Println("Skipping:", urlString)
-			continue
-		}
-
-		urls[urlString] = exists
-
-		fmt.Println("Visited URL:", urlString)
-
-		links, _ = sitemap.GetLinks(urlString)
-		addLinksToList(links, unvisited)
-	}
-
-	xUrls := []string{}
-	for u := range urls {
-		xUrls = append(xUrls, u)
-	}
-
-	err = sitemap.WriteLinksXML(path, xUrls)
-	if err != nil {
-		fmt.Println("Error writing XML:", err)
+		log.Fatal("Error writing XML:", err)
 	}
 }
 
@@ -94,10 +47,4 @@ func addScheme(domain string) string {
 		domain = "http://" + domain
 	}
 	return domain
-}
-
-func addLinksToList(links []link.Link, l *list.List) {
-	for _, link := range links {
-		l.PushBack(link)
-	}
 }

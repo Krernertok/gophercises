@@ -1,13 +1,70 @@
 package sitemap
 
 import (
+	"container/list"
 	"encoding/xml"
 	"github.com/krernertok/gophercises/link"
+	"log"
 	"net/http"
+	"net/url"
 	"os"
 )
 
-func GetLinks(url string) ([]link.Link, error) {
+type urlElem struct {
+	URL string `xml:"loc"`
+}
+
+type urlset struct {
+	XMLNS string    `xml:"xmlns,attr"`
+	URLs  []urlElem `xml:"url"`
+}
+
+func GetURLs(domain string) ([]string, error) {
+	baseURL, err := url.Parse(domain)
+	if err != nil {
+		return nil, err
+	}
+
+	unvisited := list.New()
+	unvisited.PushBack(baseURL.String())
+
+	// use urls as a set
+	urls := make(map[string]struct{})
+	exists := struct{}{}
+
+	for elem := unvisited.Front(); elem != nil; elem = elem.Next() {
+		href := elem.Value.(string)
+		url, err := baseURL.Parse(href)
+
+		if err != nil {
+			log.Println("Skipping URL:", href, "Error:", err)
+			continue
+		}
+
+		urlString := url.String()
+		if _, found := urls[urlString]; found || url.Hostname() != baseURL.Hostname() {
+			log.Println("Skipping:", urlString)
+			continue
+		}
+
+		urls[urlString] = exists
+		log.Println("Visited URL:", urlString)
+
+		links, _ := getLinks(urlString)
+		for _, link := range links {
+			unvisited.PushBack(link.Href)
+		}
+	}
+
+	xUrls := []string{}
+	for u := range urls {
+		xUrls = append(xUrls, u)
+	}
+
+	return xUrls, nil
+}
+
+func getLinks(url string) ([]link.Link, error) {
 	res, err := http.Get(url)
 
 	if err != nil {
@@ -22,15 +79,6 @@ func GetLinks(url string) ([]link.Link, error) {
 
 	res.Body.Close()
 	return links, nil
-}
-
-type urlElem struct {
-	URL string `xml:"loc"`
-}
-
-type urlset struct {
-	XMLNS string    `xml:"xmlns,attr"`
-	URLs  []urlElem `xml:"url"`
 }
 
 func WriteLinksXML(path string, urls []string) error {
