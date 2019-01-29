@@ -19,26 +19,36 @@ type urlset struct {
 	URLs  []urlElem `xml:"url"`
 }
 
-func GetURLs(domain string) ([]string, error) {
+type linkNode struct {
+	url   string
+	depth int
+}
+
+func GetURLs(domain string, depth int) ([]string, error) {
 	baseURL, err := url.Parse(domain)
 	if err != nil {
 		return nil, err
 	}
 
 	unvisited := list.New()
-	unvisited.PushBack(baseURL.String())
+	unvisited.PushBack(linkNode{baseURL.String(), 1})
 
 	// use urls as a set
 	urls := make(map[string]struct{})
 	exists := struct{}{}
 
 	for elem := unvisited.Front(); elem != nil; elem = elem.Next() {
-		href := elem.Value.(string)
+		href := elem.Value.(linkNode).url
+		currDepth := elem.Value.(linkNode).depth
 		url, err := baseURL.Parse(href)
 
 		if err != nil {
 			log.Println("Skipping URL:", href, "Error:", err)
 			continue
+		}
+
+		if depth != 0 && currDepth > depth {
+			break
 		}
 
 		urlString := url.String()
@@ -52,7 +62,7 @@ func GetURLs(domain string) ([]string, error) {
 
 		links, _ := getLinks(urlString)
 		for _, link := range links {
-			unvisited.PushBack(link.Href)
+			unvisited.PushBack(linkNode{link.Href, currDepth + 1})
 		}
 	}
 

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/krernertok/gophercises/sitemap"
 	"log"
-	"os"
 	"strings"
 )
 
@@ -18,18 +18,23 @@ import (
 //    unvisited links into queue
 // 6. Repeat until queue is empty
 // 7. Create XML from visited URLs
+
 const (
 	path = "urls.xml"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Provide the URL for the domain you want the sitemap for.")
+	depth := flag.Int("depth", 0, "maximum depth to search for links")
+	flag.Parse()
+
+	domain := flag.Arg(0)
+	if domain == "" {
+		fmt.Println("Provide the URL for the domain you want the sitemap for.", domain)
 		return
 	}
 
-	domain := addScheme(os.Args[1])
-	urls, err := sitemap.GetURLs(domain)
+	domain = addScheme(domain)
+	urls, err := sitemap.GetURLs(domain, *depth)
 
 	if err != nil {
 		log.Fatal(err)
