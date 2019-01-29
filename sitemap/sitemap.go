@@ -47,7 +47,7 @@ func GetURLs(domain string, depth int) ([]string, error) {
 			continue
 		}
 
-		if depth != 0 && currDepth > depth {
+		if depth > 1 && currDepth > depth {
 			break
 		}
 
