@@ -25,6 +25,8 @@ type linkNode struct {
 }
 
 func GetURLs(domain string, depth int) ([]string, error) {
+	// Feedback from solution: Should GET the "domain" string and use the 
+	// resp.Request.URL for the baseURL. Also, use URL.Host as the baseURL 
 	baseURL, err := url.Parse(domain)
 	if err != nil {
 		return nil, err
