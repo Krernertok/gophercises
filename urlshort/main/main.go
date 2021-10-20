@@ -3,24 +3,40 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gophercises/urlshort"
+	"gophercises/urlshort/db"
+	"gophercises/urlshort/handler"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
+const dbName = "db/test.db"
+
 func getHandler(ext string, data []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	switch ext {
 	case ".json":
-		return urlshort.JSONHandler(data, fallback)
+		return handler.JSONHandler(data, fallback)
 	case ".yml", ".yaml":
-		return urlshort.YAMLHandler(data, fallback)
+		return handler.YAMLHandler(data, fallback)
+	case ".db":
+		return handler.DBHandler(dbName, []byte(db.DefaultBucket), fallback)
 	}
-	return nil, fmt.Errorf("No handler defined for extension: %s", ext)
+	return nil, fmt.Errorf("no handler defined for extension: %s", ext)
+}
+
+func defaultMux() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", hello)
+	return mux
+}
+
+func hello(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Hello, world!")
 }
 
 func main() {
-	file := flag.String("config", "main/config.json", "file containing path to URL mapping")
+	db.AddData(dbName)
+	file := flag.String("config", dbName, "file containing path to URL mapping")
 	flag.Parse()
 
 	data, err := os.ReadFile(*file)
@@ -33,30 +49,10 @@ func main() {
 	extension := filepath.Ext(*file)
 	mux := defaultMux()
 
-	// Build the MapHandler using the mux as the fallback
-	pathsToUrls := map[string]string{
-		"/urlshort-godoc": "https://godoc.org/github.com/gophercises/urlshort",
-		"/yaml-godoc":     "https://godoc.org/gopkg.in/yaml.v2",
-	}
-	mapHandler := urlshort.MapHandler(pathsToUrls, mux)
-
-	// Build the YAMLHandler using the mapHandler as the
-	// fallback
-	handler, err := getHandler(extension, []byte(data), mapHandler)
+	handler, err := getHandler(extension, []byte(data), mux)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("Starting the server on :8080")
 	http.ListenAndServe(":8080", handler)
-	// http.ListenAndServe(":8080", mapHandler)
-}
-
-func defaultMux() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", hello)
-	return mux
-}
-
-func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, world!")
 }

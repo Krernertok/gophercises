@@ -1,7 +1,8 @@
-package urlshort
+package handler
 
 import (
 	"encoding/json"
+	"gophercises/urlshort/db"
 	"net/http"
 
 	"github.com/go-yaml/yaml"
@@ -79,4 +80,9 @@ func JSONHandler(jsonData []byte, fallback http.Handler) (http.HandlerFunc, erro
 	}
 
 	return MapHandler(pathMap, fallback), nil
+}
+
+func DBHandler(dbName string, bucket []byte, fallback http.Handler) (http.HandlerFunc, error) {
+	redirections := db.GetPathMap(dbName, bucket)
+	return MapHandler(redirections, fallback), nil
 }
