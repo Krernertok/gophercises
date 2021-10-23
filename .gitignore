@@ -1,3 +1,6 @@
 **/*
 !**/
 !**/*.go
+
+!gopher.json
+!cyoa.html.tmpl
