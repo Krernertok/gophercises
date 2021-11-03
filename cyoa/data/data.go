@@ -43,3 +43,10 @@ func handleError(description ...interface{}) {
 	fmt.Println(description...)
 	os.Exit(1)
 }
+
+func ValidEntry(entry string, chapters map[string]Chapter) {
+	if _, found := chapters[entry]; !found {
+		fmt.Printf("Arc named '%s' not found in story data.\n", entry)
+		os.Exit(1)
+	}
+}
