@@ -10,6 +10,31 @@ import (
 	text "text/template"
 )
 
+var scanner = bufio.NewScanner(os.Stdin)
+
+func scanOption(numOptions int) (int, error) {
+	fmt.Println("Choose option:")
+	for scanner.Scan() {
+		selection := strings.TrimSpace(scanner.Text())
+		i, err := strconv.Atoi(selection)
+		if err != nil || i <= 0 || i > numOptions {
+			fmt.Println("Invalid option. Try again.")
+			continue
+		}
+
+		// convert i to 0-based index
+		return i - 1, nil
+	}
+
+	err := scanner.Err()
+	if err != nil {
+		return 0, err
+	}
+
+	// if user inputs EOF (err == nil), return -1
+	return -1, nil
+}
+
 func RunCliMode(entry string, chapters map[string]data.Chapter) {
 	data.ValidEntry(entry, chapters)
 
@@ -26,9 +51,7 @@ func RunCliMode(entry string, chapters map[string]data.Chapter) {
 		os.Exit(1)
 	}
 
-	scanner := bufio.NewScanner(os.Stdin)
 	next := entry
-chapter:
 	for {
 		chapter := chapters[next]
 		err = template.Execute(os.Stdout, chapter)
@@ -41,26 +64,15 @@ chapter:
 			break
 		}
 
-		fmt.Println("Choose option:")
-		for scanner.Scan() {
-			selection := strings.TrimSpace(scanner.Text())
-			i, err := strconv.Atoi(selection)
-			if err != nil || i < 0 || i > numOptions {
-				fmt.Println("Invalid option. Try again.")
-				continue
-			}
-
-			// convert i to 0-based index
-			next = chapter.Options[i-1].Arc
-			continue chapter
-		}
-
-		err := scanner.Err()
+		selection, err := scanOption(numOptions)
 		if err != nil {
 			panic(err)
-		} else if err == nil {
-			// if user inputs EOF, exit
+		}
+
+		if selection == -1 {
 			break
 		}
+
+		next = chapter.Options[selection].Arc
 	}
 }
