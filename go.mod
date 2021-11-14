@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/go-yaml/yaml v2.1.0+incompatible
+	golang.org/x/net v0.0.0-20211105192438-b53810dc28af
 )
 
 require (
