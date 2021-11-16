@@ -1,11 +1,11 @@
-package main
+package link
 
 import (
 	"bufio"
 	"flag"
 	"fmt"
 	"os"
-	"strings"
+	"regexp"
 
 	"golang.org/x/net/html"
 )
@@ -15,9 +15,9 @@ type Link struct {
 	Text string
 }
 
-func extractLinks(node *html.Node, links []Link) []Link {
+func ExtractLinks(node *html.Node, links []Link) []Link {
 	if node.FirstChild != nil {
-		links = extractLinks(node.FirstChild, links)
+		links = ExtractLinks(node.FirstChild, links)
 	}
 
 	if node.Type == html.ElementNode && node.Data == "a" {
@@ -30,13 +30,16 @@ func extractLinks(node *html.Node, links []Link) []Link {
 			}
 		}
 
+		re := regexp.MustCompile(`\s+`)
 		text = extractText(node.FirstChild)
-		link := Link{href, text}
+		trimmedText := re.ReplaceAllString(text, " ")
+
+		link := Link{href, trimmedText}
 		links = append(links, link)
 	}
 
 	if node.NextSibling != nil {
-		links = extractLinks(node.NextSibling, links)
+		links = ExtractLinks(node.NextSibling, links)
 	}
 
 	return links
@@ -46,10 +49,7 @@ func extractText(node *html.Node) string {
 	extractedText := ""
 
 	if node.Type == html.TextNode {
-		if extractedText != "" {
-			extractedText += " "
-		}
-		extractedText = strings.TrimSpace(node.Data)
+		extractedText = node.Data
 	}
 
 	if node.FirstChild != nil {
@@ -79,7 +79,7 @@ func main() {
 		panic(err)
 	}
 
-	links = extractLinks(doc, links)
+	links = ExtractLinks(doc, links)
 
 	for _, link := range links {
 		fmt.Println("Href:", link.Href)
