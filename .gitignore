@@ -4,3 +4,5 @@
 
 !gopher.json
 !cyoa.html.tmpl
+!cyoa.txt.tmpl
+!.gitignore
