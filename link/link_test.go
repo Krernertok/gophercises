@@ -3,6 +3,7 @@ package link
 import (
 	"bufio"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -13,26 +14,26 @@ var tests map[string][]Link = map[string][]Link{
 	"ex1.html": {
 		Link{"/other-page", "A link to another page"},
 	},
-	"ex2.html": []Link{
+	"ex2.html": {
 		Link{"https://www.twitter.com/joncalhoun", " Check me out on twitter "},
 		Link{"https://github.com/gophercises", " Gophercises is on Github! "},
 	},
-	"ex3.html": []Link{
+	"ex3.html": {
 		Link{"#", "Login "},
 		Link{"/lost", "Lost? Need help?"},
 		Link{"https://twitter.com/marcusolsson", "@marcusolsson"},
 	},
-	"ex4.html": []Link{
+	"ex4.html": {
 		Link{"/dog-cat", "dog cat "},
 	},
-	"ex5.html": []Link{
+	"ex5.html": {
 		Link{"/dog-cat", "dog cat hippopotamus"},
 	},
 }
 
 func TestExtractLinks(t *testing.T) {
 	for filename, result := range tests {
-		file, err := os.Open(filename)
+		file, err := os.Open(path.Join("testdata", filename))
 		if err != nil {
 			panic(err)
 		}

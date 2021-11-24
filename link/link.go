@@ -1,10 +1,6 @@
 package link
 
 import (
-	"bufio"
-	"flag"
-	"fmt"
-	"os"
 	"regexp"
 
 	"golang.org/x/net/html"
@@ -61,29 +57,4 @@ func extractText(node *html.Node) string {
 	}
 
 	return extractedText
-}
-
-func main() {
-	filename := flag.String("file", "ex1.html", "filename to extract links from")
-	flag.Parse()
-
-	f, err := os.Open(*filename)
-	if err != nil {
-		panic(err)
-	}
-
-	links := []Link{}
-	reader := bufio.NewReader(f)
-	doc, err := html.Parse(reader)
-	if err != nil {
-		panic(err)
-	}
-
-	links = ExtractLinks(doc, links)
-
-	for _, link := range links {
-		fmt.Println("Href:", link.Href)
-		fmt.Println("Text:", link.Text)
-		fmt.Println("---")
-	}
 }
