@@ -1,0 +1,8 @@
+
+{{.Title}}
+{{range .Story}}
+{{.}}
+{{end}}
+{{range $i, $o := .Options}}
+#{{inc $i}}. {{$o.Text}}
+{{end}}
